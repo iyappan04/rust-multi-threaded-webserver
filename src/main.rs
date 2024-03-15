@@ -6,7 +6,9 @@ use std::{
 
 use std::thread;
 use std::time::Duration;
-use std::sync::{Arc, Mutex};
+// use std::sync::{Arc, Mutex};
+use multithread_webserver::ThreadPool;
+
 
 fn main(){
 
@@ -31,24 +33,34 @@ fn main(){
     // }
 
 
-    let listener = Arc::new(TcpListener::bind("127.0.0.1:7878").unwrap());
-
-    // let (r, w) = (Arc::clone(&listener), listener);
-
-    
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let pool = ThreadPool::new(4);
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
+
+        pool.execute(|| {
+            handle_connection(stream);
+        });
+    }
+
+    // let listener = Arc::new(TcpListener::bind("127.0.0.1:7878").unwrap());
+    // let (r, w) = (Arc::clone(&listener), listener);
+
+    // let listener =  TcpListener::bind("127.0.0.1:7878").unwrap();
+    
+    // for stream in listener.incoming() {
+    //     let stream = stream.unwrap();
 
         // let connection = Arc::new(Mutex::new(stream));
 
         // let thread1 = Arc::clone(&connection);
         // let thread2 = Arc::clone(&connection);
         
-        thread::spawn(move || {
-            handle_connection(stream);
-            println!("From Thread 1");
-        });
+        // thread::spawn(move || {
+        //     handle_connection(stream);
+        //     println!("From Thread 1");
+        // });
         
         // handle_connection(stream);
 
@@ -60,9 +72,7 @@ fn main(){
         //     handle_connection(stream);
         //     println!("From Thread 2");
         // });
-
-
-    }
+    // }
 }
 
 
@@ -119,8 +129,6 @@ fn main(){
 
 fn handle_connection(mut stream: TcpStream) {
     
-
-
     let buf_reader = BufReader::new(&mut stream);
     let request_line = buf_reader.lines().next().unwrap().unwrap();
 
